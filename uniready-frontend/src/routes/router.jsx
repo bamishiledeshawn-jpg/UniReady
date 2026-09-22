@@ -11,6 +11,7 @@ import BusinessGenerate from "../pages/BusinessGenerate";
 import CbtExam from "../pages/CbtExam";
 import AuthEntry from "../pages/AuthEntry";
 import OtpVerify from "../pages/OtpVerify";
+import IntroSlides from "../pages/IntroSlides";
 import Onboarding from "../pages/Onboarding";
 import OnboardingDiagnostic from "../pages/OnboardingDiagnostic";
 
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
     children: [
+      { path: "/welcome", element: <IntroSlides /> },
       { path: "/login", element: <AuthEntry /> },
       { path: "/login/verify", element: <OtpVerify /> },
     ],
