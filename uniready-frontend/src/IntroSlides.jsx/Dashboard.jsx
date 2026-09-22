@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Card from "../components/ui/Card";
+import { useAuth } from "../context/AuthContext";
 import {
   EXAM_TARGET,
   getDaysUntilExam,
@@ -13,13 +14,12 @@ import {
   getHubOrder,
 } from "../lib/dashboardContent";
 
-// Mock data shape — swap for real API/IndexedDB data later.
-// A user with no continueItems and no weakAreas is treated as brand new,
-// so every section below degrades gracefully instead of assuming history.
-// BACKEND TODO: replace this whole object with a real user/session fetch.
-const user = {
-  name: "Chidi",
-  readiness: null, // null until they've done a diagnostic or a few sessions
+// Everything below except name/examType/readiness is still mock data —
+// swap for real API/IndexedDB data later. A user with no continueItems
+// and no weakAreas is treated as brand new, so every section degrades
+// gracefully instead of assuming history.
+// BACKEND TODO: replace continueItems/weakAreas/offlinePacks with a real fetch.
+const mockActivity = {
   streak: 0,
   streakDays: [], // e.g. ["Mon","Tue"] — days this week with activity
 
@@ -34,7 +34,7 @@ const user = {
   offlinePacks: [], // e.g. [{ label: "Maths & English 2024-2026", size: "245 MB" }]
 };
 
-const isNewUser = user.continueItems.length === 0 && user.weakAreas.length === 0;
+const EXAM_LABELS = { JAMB: "JAMB", WAEC: "WAEC", NECO: "NECO" };
 
 const WEEK_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -80,8 +80,22 @@ export default function Dashboard() {
   // as a small non-blocking notice — signup itself already completed
   // normally, this is purely informational (see OtpVerify.jsx).
   const location = useLocation();
+  const { user: authUser } = useAuth();
   const [voucherNoticeDismissed, setVoucherNoticeDismissed] = useState(false);
   const voucherError = location.state?.voucherError;
+
+  // Set once by OnboardingDiagnostic.jsx via route state, right after the
+  // mini diagnostic quiz. Doesn't persist across a refresh yet — there's
+  // no backend column for it — so this is a real score, just not saved.
+  const readinessScore = location.state?.readinessScore ?? null;
+
+  const user = {
+    name: authUser?.name || "there",
+    examType: authUser?.examType || null,
+    readiness: readinessScore,
+    ...mockActivity,
+  };
+  const isNewUser = user.continueItems.length === 0 && user.weakAreas.length === 0;
 
   // Computed once per mount — all pure client-side, no backend needed.
   const now = useMemo(() => new Date(), []);
@@ -137,7 +151,9 @@ export default function Dashboard() {
               : `${timeGreeting}, ${user.name}! 👋`}
           </h1>
           <p className="text-text-secondary text-[18px] leading-7">
-            {isNewUser ? "Let's get you set up for the 2024 JAMB." : "Let's dive back in."}
+            {isNewUser
+              ? `Let's get you ready for ${EXAM_LABELS[user.examType] || EXAM_TARGET.label}.`
+              : "Let's dive back in."}
           </p>
         </div>
 

@@ -57,6 +57,7 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 	authHandler := handlers.NewAuth(db, smsSender, emailSender)
 	vouchersHandler := handlers.NewVouchers(db)
 	adminAuthHandler := handlers.NewAdminAuth(db)
+	usersHandler := handlers.NewUsers(db)
 
 	router.GET("/health", healthHandler.Check)
 
@@ -75,6 +76,12 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 		vouchers.Use(middleware.RequireUser(db))
 		{
 			vouchers.POST("/redeem", vouchersHandler.Redeem)
+		}
+
+		users := api.Group("/users")
+		users.Use(middleware.RequireUser(db))
+		{
+			users.PATCH("/me/exam-type", usersHandler.UpdateExamType)
 		}
 
 		// Separate rate limiter instance from authLimiter — admin login

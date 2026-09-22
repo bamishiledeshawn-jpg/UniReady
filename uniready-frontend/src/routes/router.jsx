@@ -11,6 +11,8 @@ import BusinessGenerate from "../pages/BusinessGenerate";
 import CbtExam from "../pages/CbtExam";
 import AuthEntry from "../pages/AuthEntry";
 import OtpVerify from "../pages/OtpVerify";
+import Onboarding from "../pages/Onboarding";
+import OnboardingDiagnostic from "../pages/OnboardingDiagnostic";
 
 // CBT Simulator and the auth flow both get their own layout routes (no
 // top/bottom nav) — sit outside AppShell.
@@ -34,6 +36,8 @@ export const router = createBrowserRouter([
           { path: "/results", element: <Results /> },
           { path: "/business", element: <Business /> },
           { path: "/business/generate", element: <BusinessGenerate /> },
+          { path: "/onboarding", element: <Onboarding /> },
+          { path: "/onboarding/diagnostic", element: <OnboardingDiagnostic /> },
         ],
       },
       {

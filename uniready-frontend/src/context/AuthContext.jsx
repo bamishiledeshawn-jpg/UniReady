@@ -74,6 +74,35 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  // Saves the exam the user is preparing for, chosen during onboarding.
+  // Needs the current token, so this can't just be apiPost — it has to
+  // send Authorization the same way an authenticated request would.
+  const setExamType = useCallback(
+    (examType) => {
+      return fetch(`${API_BASE_URL}/api/v1/users/me/exam-type`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.token}`,
+        },
+        body: JSON.stringify({ examType }),
+      })
+        .then((res) => res.json().catch(() => ({})))
+        .then((data) => {
+          // Keep the locally-stored user in sync so the dashboard
+          // reflects the choice immediately without a refetch.
+          setSession((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, user: { ...prev.user, examType: data.examType } };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+            return next;
+          });
+          return data;
+        });
+    },
+    [session]
+  );
+
   const logout = useCallback(() => {
     // Note: this only clears the local copy of the session. There's no
     // backend endpoint yet to invalidate the session server-side (e.g.
@@ -91,6 +120,7 @@ export function AuthProvider({ children }) {
     requestSignup,
     requestLogin,
     verifyOtp,
+    setExamType,
     logout,
   };
 

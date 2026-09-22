@@ -19,6 +19,11 @@ export default function OtpVerify() {
   const identifier = phone || email;
   const identifierLabel = phone ? "phone number" : "email";
 
+  // A brand-new account goes through onboarding (pick an exam, quick
+  // diagnostic) before landing on the dashboard; an existing user
+  // logging back in skips straight there — they've already done this.
+  const postVerifyDestination = mode === "signup" ? "/onboarding" : "/";
+
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(""));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,7 +77,7 @@ export default function OtpVerify() {
   const redeemVoucherIfAny = async (token) => {
     const code = (signupCode || "").trim();
     if (!code) {
-      navigate("/", { replace: true });
+      navigate(postVerifyDestination, { replace: true });
       return;
     }
 
@@ -93,15 +98,15 @@ export default function OtpVerify() {
       } else if (promoCodeApplied) {
         // Already recognized as a promo code — the voucher attempt
         // failing is expected, not an error worth surfacing.
-        navigate("/", { replace: true });
+        navigate(postVerifyDestination, { replace: true });
       } else {
-        navigate("/", {
+        navigate(postVerifyDestination, {
           replace: true,
           state: { voucherError: "That code wasn't recognized — no discount or voucher applied." },
         });
       }
     } catch {
-      navigate("/", {
+      navigate(postVerifyDestination, {
         replace: true,
         state: { voucherError: "Couldn't reach the server to apply your code" },
       });
@@ -222,7 +227,7 @@ export default function OtpVerify() {
 
       <VoucherRedeemedModal
         result={voucherResult}
-        onClose={() => navigate("/", { replace: true })}
+        onClose={() => navigate(postVerifyDestination, { replace: true })}
       />
     </>
   );
