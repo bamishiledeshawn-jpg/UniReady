@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Card from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
+import { PENDING_EXAM_KEY } from "./IntroSlides";
 import { API_BASE_URL } from "../lib/apiConfig";
 import VoucherRedeemedModal from "../components/voucher/VoucherRedeemedModal";
 
@@ -11,7 +12,7 @@ const RESEND_COOLDOWN_SECONDS = 60; // matches the backend's per-identifier cool
 export default function OtpVerify() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOtp, requestSignup, requestLogin } = useAuth();
+  const { verifyOtp, requestSignup, requestLogin, setExamType } = useAuth();
   const { mode, phone, email, name, code: signupCode, promoCodeApplied } = location.state || {};
 
   // Whichever identifier was actually provided — phone takes priority if
@@ -19,10 +20,11 @@ export default function OtpVerify() {
   const identifier = phone || email;
   const identifierLabel = phone ? "phone number" : "email";
 
-  // A brand-new account goes through onboarding (pick an exam, quick
-  // diagnostic) before landing on the dashboard; an existing user
-  // logging back in skips straight there — they've already done this.
-  const postVerifyDestination = mode === "signup" ? "/onboarding" : "/";
+  // A brand-new account goes straight into the diagnostic quiz — the
+  // "which exam" question used to be its own screen here (Onboarding.jsx),
+  // but now happens earlier, inside IntroSlides.jsx, before login even
+  // starts. See the pending-exam-type pickup in handleVerify below.
+  const postVerifyDestination = mode === "signup" ? "/onboarding/diagnostic" : "/";
 
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(""));
   const [error, setError] = useState("");
@@ -124,6 +126,22 @@ export default function OtpVerify() {
 
     try {
       const { token } = await verifyOtp({ phone, email, code });
+
+      // Exam choice was captured pre-login, in IntroSlides.jsx — apply it
+      // now that there's an actual account to attach it to. Failing here
+      // shouldn't block the rest of signup; worst case they land on the
+      // dashboard with no exam_type set, same as if they'd skipped the
+      // intro slides entirely, which the dashboard already handles.
+      const pendingExam = localStorage.getItem(PENDING_EXAM_KEY);
+      if (pendingExam) {
+        try {
+          await setExamType(pendingExam);
+        } catch {
+          // non-fatal, see comment above
+        }
+        localStorage.removeItem(PENDING_EXAM_KEY);
+      }
+
       await redeemVoucherIfAny(token);
     } catch (err) {
       // Real backend error messages: "Incorrect code", "Code expired or
