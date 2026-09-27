@@ -89,6 +89,7 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 		promo.Use(middleware.RequireUser(db))
 		{
 			promo.POST("/me", promoHandler.GenerateOwn)
+			promo.GET("/me", promoHandler.GetOwn)
 		}
 
 		// Separate rate limiter instance from authLimiter — admin login
