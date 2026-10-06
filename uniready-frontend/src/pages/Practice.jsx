@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
+import AdSlot from "../components/ads/AdSlot";
 import { SUBJECTS, searchTopics } from "../data/questionBank";
 
 export default function Practice() {
@@ -81,6 +82,8 @@ export default function Practice() {
           </Card>
         ))}
       </div>
+
+      <AdSlot placement="practice" className="mt-stack-lg" />
     </div>
   );
 }

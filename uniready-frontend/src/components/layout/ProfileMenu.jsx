@@ -12,7 +12,7 @@ export default function ProfileMenu({ userAvatarUrl }) {
   const [redeemResult, setRedeemResult] = useState(null);
   const ref = useRef(null);
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, refreshMe } = useAuth();
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -54,6 +54,7 @@ export default function ProfileMenu({ userAvatarUrl }) {
       setVoucherCode("");
       setOpen(false);
       setRedeemResult(data);
+      refreshMe();
     } catch {
       setVoucherError("Couldn't reach the server");
     } finally {
@@ -96,6 +97,16 @@ export default function ProfileMenu({ userAvatarUrl }) {
               3 days remaining
             </p>
           </div>
+
+          <button
+            onClick={() => {
+              setOpen(false);
+              navigate("/premium");
+            }}
+            className="btn-spring w-full bg-primary text-on-primary text-[14px] font-medium rounded-lg py-2.5 mb-4 hover:bg-primary-hover"
+          >
+            Buy Premium
+          </button>
 
           <div className="mb-1">
             <label className="text-[12px] text-text-secondary mb-2 block">

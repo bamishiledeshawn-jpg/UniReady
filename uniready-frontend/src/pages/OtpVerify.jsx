@@ -12,7 +12,7 @@ const RESEND_COOLDOWN_SECONDS = 60; // matches the backend's per-identifier cool
 export default function OtpVerify() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOtp, requestSignup, requestLogin, setExamType } = useAuth();
+  const { verifyOtp, requestSignup, requestLogin, setExamType, refreshMe } = useAuth();
   const { mode, phone, email, name, code: signupCode, promoCodeApplied } = location.state || {};
 
   // Whichever identifier was actually provided — phone takes priority if
@@ -97,6 +97,7 @@ export default function OtpVerify() {
       if (res.ok) {
         // Show the popup now — dashboard only after they dismiss it.
         setVoucherResult(data);
+        refreshMe(token);
       } else if (promoCodeApplied) {
         // Already recognized as a promo code — the voucher attempt
         // failing is expected, not an error worth surfacing.

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Card from "../components/ui/Card";
+import AdSlot from "../components/ads/AdSlot";
 import { useAuth } from "../context/AuthContext";
 import {
   EXAM_TARGET,
@@ -462,6 +463,8 @@ export default function Dashboard() {
               </Card>
             ))}
           </div>
+
+          <AdSlot placement="dashboard" className="mt-stack-lg" />
         </div>
       </div>
     </>

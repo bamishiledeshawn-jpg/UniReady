@@ -57,8 +57,10 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 	authHandler := handlers.NewAuth(db, smsSender, emailSender)
 	vouchersHandler := handlers.NewVouchers(db)
 	adminAuthHandler := handlers.NewAdminAuth(db)
+	adminDataHandler := handlers.NewAdminData(db)
 	usersHandler := handlers.NewUsers(db)
 	promoHandler := handlers.NewPromo(db)
+	purchasesHandler := handlers.NewPurchases(db, cfg.PaystackSecretKey, cfg.PaystackPublicKey)
 
 	router.GET("/health", healthHandler.Check)
 
@@ -82,6 +84,7 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 		users := api.Group("/users")
 		users.Use(middleware.RequireUser(db))
 		{
+			users.GET("/me", usersHandler.GetMe)
 			users.PATCH("/me/exam-type", usersHandler.UpdateExamType)
 		}
 
@@ -91,6 +94,19 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 			promo.POST("/me", promoHandler.GenerateOwn)
 			promo.GET("/me", promoHandler.GetOwn)
 		}
+
+		purchases := api.Group("/purchases")
+		purchases.Use(middleware.RequireUser(db))
+		{
+			purchases.POST("/initialize", purchasesHandler.Initialize)
+			purchases.GET("/:reference/status", purchasesHandler.Status)
+		}
+
+		// Paystack calls this directly — it is NOT a logged-in user, so
+		// it deliberately sits outside RequireUser. Trust here comes
+		// from the signature check inside the handler itself, not from
+		// session middleware.
+		api.POST("/webhooks/paystack", purchasesHandler.Webhook)
 
 		// Separate rate limiter instance from authLimiter — admin login
 		// attempts shouldn't share a budget with student OTP requests,
@@ -106,6 +122,9 @@ func New(cfg config.Config, db *pgxpool.Pool) *gin.Engine {
 		adminProtected.Use(middleware.RequireAdmin(db))
 		{
 			adminProtected.GET("/me", adminAuthHandler.Me)
+			adminProtected.GET("/stats/overview", adminDataHandler.Overview)
+			adminProtected.GET("/voucher-batches", adminDataHandler.ListVoucherBatches)
+			adminProtected.POST("/voucher-batches", adminDataHandler.CreateVoucherBatch)
 		}
 
 		// Add further route groups here as they're built, e.g.:

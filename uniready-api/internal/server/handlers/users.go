@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -55,4 +56,32 @@ func (h *Users) UpdateExamType(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"examType": req.ExamType})
+}
+
+// GetMe returns the profile info the frontend needs post-login: which
+// promo code (if any) this user signed up with (auto-fills checkout), and
+// whether their premium is currently active. isPremium is computed here
+// from premium_until so the frontend never has to trust its own clock.
+func (h *Users) GetMe(c *gin.Context) {
+	userID := c.GetString("userID")
+
+	var appliedPromoCode *string
+	var premiumUntil *time.Time
+	var isPremium bool
+	err := h.db.QueryRow(c.Request.Context(), `
+		SELECT pc.code, u.premium_until, COALESCE(u.premium_until > now(), false)
+		FROM users u
+		LEFT JOIN promo_codes pc ON pc.id = u.referred_by_promo_code_id
+		WHERE u.id = $1
+	`, userID).Scan(&appliedPromoCode, &premiumUntil, &isPremium)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "message": "Could not load your account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"appliedPromoCode": appliedPromoCode,
+		"isPremium":        isPremium,
+		"premiumUntil":     premiumUntil,
+	})
 }

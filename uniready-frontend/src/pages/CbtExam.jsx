@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import MathText from "../components/practice/MathText";
+import AdSlot from "../components/ads/AdSlot";
 import {
   getQuestionsFor,
   getSubject,
@@ -320,6 +321,8 @@ export default function CbtExam() {
             </div>
           )}
         </article>
+
+        <AdSlot placement="cbt" className="mt-stack-lg" />
       </main>
 
       {/* Footer Controls */}

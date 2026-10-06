@@ -14,6 +14,7 @@ import OtpVerify from "../pages/OtpVerify";
 import IntroSlides from "../pages/IntroSlides";
 import Onboarding from "../pages/Onboarding";
 import OnboardingDiagnostic from "../pages/OnboardingDiagnostic";
+import PremiumCheckout from "../pages/PremiumCheckout";
 
 // CBT Simulator and the auth flow both get their own layout routes (no
 // top/bottom nav) — sit outside AppShell.
@@ -24,6 +25,8 @@ import OnboardingDiagnostic from "../pages/OnboardingDiagnostic";
 // only the top bar's "Log In" vs. avatar differing. /login and /login/verify
 // stay outside RequireAuth, obviously — that's the one place a logged-out
 // visitor is supposed to land.
+const lazyPage = (load) => async () => ({ Component: (await load()).default });
+
 export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
@@ -36,6 +39,7 @@ export const router = createBrowserRouter([
           { path: "/practice/:subjectId", element: <PracticeSubject /> },
           { path: "/results", element: <Results /> },
           { path: "/business", element: <Business /> },
+          { path: "/premium", element: <PremiumCheckout /> },
           { path: "/business/generate", element: <BusinessGenerate /> },
           { path: "/onboarding", element: <Onboarding /> },
           { path: "/onboarding/diagnostic", element: <OnboardingDiagnostic /> },
@@ -53,6 +57,20 @@ export const router = createBrowserRouter([
       { path: "/welcome", element: <IntroSlides /> },
       { path: "/login", element: <AuthEntry /> },
       { path: "/login/verify", element: <OtpVerify /> },
+    ],
+  },
+  {
+    path: "/admin",
+    lazy: lazyPage(() => import("../pages/admin/AdminRoot")),
+    children: [
+      { path: "login", lazy: lazyPage(() => import("../pages/admin/AdminLogin")) },
+      {
+        lazy: lazyPage(() => import("../pages/admin/AdminLayout")),
+        children: [
+          { index: true, lazy: lazyPage(() => import("../pages/admin/AdminOverview")) },
+          { path: "vouchers", lazy: lazyPage(() => import("../pages/admin/AdminVouchers")) },
+        ],
+      },
     ],
   },
 ]);

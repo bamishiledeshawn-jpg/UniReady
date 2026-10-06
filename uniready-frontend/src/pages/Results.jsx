@@ -15,6 +15,7 @@ import {
   flattenAnswersWithSubject,
 } from "../lib/sessionHistory";
 import { EXAM_TARGET } from "../lib/dashboardContent";
+import AdSlot from "../components/ads/AdSlot";
 import { TopicBarChart, TopicHeatmap } from "../components/results/PerformanceCharts";
 
 // Generic (non-topic-specific) remediation resources shown per weak topic.
@@ -439,6 +440,8 @@ export default function Results() {
           </div>
         )}
       </section>
+
+      <AdSlot placement="results" className="mt-stack-lg mb-stack-lg" />
 
       {/* Footer actions */}
       <footer className="mt-auto pt-stack-lg pb-stack-md flex flex-col-reverse sm:flex-row items-center justify-end gap-stack-md border-t border-surface-container-highest">

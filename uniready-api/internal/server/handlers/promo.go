@@ -32,8 +32,13 @@ var nonLetterPattern = regexp.MustCompile(`[^A-Za-z]`)
 // already handed out (matches how discount/commission percent are stored
 // per-redemption too, in promo_redemptions).
 const (
-	defaultDiscountPercent   = 10.0
-	defaultCommissionPercent = 5.0
+	// Derived from client pricing: ₦5,000 full price, ₦3,000 with a
+	// code (40% off), owner earns ₦1,000 of that (33.33% of what's
+	// actually paid). Stored to 2 decimal places, so the commission
+	// this produces lands a few kobo short of an exact ₦1,000 — see the
+	// rounding note where commission is calculated in purchases.go.
+	defaultDiscountPercent   = 40.0
+	defaultCommissionPercent = 33.33
 	maxGenerationAttempts    = 10
 )
 
@@ -191,6 +196,39 @@ func (h *Promo) GetOwn(c *gin.Context) {
 		return
 	}
 
+	// Real daily totals for the last 14 days — used for a small earnings
+	// chart on the dashboard. Days with no redemptions are filled in as
+	// zero (via generate_series) rather than omitted, so the chart has a
+	// consistent number of points instead of gaps.
+	rows, err := h.db.Query(ctx, `
+		SELECT d::date, COALESCE(sum(pr.commission_amount_kobo), 0)
+		FROM generate_series(CURRENT_DATE - 13, CURRENT_DATE, interval '1 day') d
+		LEFT JOIN promo_redemptions pr
+			ON pr.promo_code_id = $1 AND pr.created_at::date = d::date
+		GROUP BY d
+		ORDER BY d
+	`, codeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "message": "Could not load earnings history"})
+		return
+	}
+	defer rows.Close()
+
+	type earningsPoint struct {
+		Date       string `json:"date"`
+		AmountKobo int    `json:"amountKobo"`
+	}
+	earningsHistory := []earningsPoint{}
+	for rows.Next() {
+		var day time.Time
+		var amount int
+		if err := rows.Scan(&day, &amount); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "message": "Could not read earnings history"})
+			return
+		}
+		earningsHistory = append(earningsHistory, earningsPoint{Date: day.Format("2006-01-02"), AmountKobo: amount})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"hasCode":            true,
 		"code":               code,
@@ -198,5 +236,6 @@ func (h *Promo) GetOwn(c *gin.Context) {
 		"paidConversions":    paidConversions,
 		"pendingEarningsKobo": pendingEarningsKobo,
 		"nextPayoutDate":     nextPayoutDate(time.Now()).Format("2006-01-02"),
+		"earningsHistory":    earningsHistory,
 	})
 }

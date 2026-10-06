@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { API_BASE_URL } from "../lib/apiConfig";
 
 // Real backend-wired auth. The session TOKEN is real — issued by
@@ -41,6 +41,32 @@ async function apiPost(path, body) {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(readStoredSession);
+  const [isPremium, setIsPremium] = useState(null);
+  const token = session?.token ?? null;
+
+  const refreshMe = useCallback(
+    (overrideToken) => {
+      const t = overrideToken || token;
+      if (!t) return Promise.resolve();
+      return fetch(`${API_BASE_URL}/api/v1/users/me`, {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) setIsPremium(Boolean(data.isPremium));
+        })
+        .catch(() => {});
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (!token) {
+      setIsPremium(null);
+      return;
+    }
+    refreshMe();
+  }, [token, refreshMe]);
 
   // Sends an OTP to a new signup. Does not log anyone in — the account
   // isn't verified until verifyOtp() succeeds.
@@ -117,6 +143,8 @@ export function AuthProvider({ children }) {
     user: session?.user ?? null,
     token: session?.token ?? null,
     isAuthenticated: Boolean(session?.token),
+    isPremium,
+    refreshMe,
     requestSignup,
     requestLogin,
     verifyOtp,

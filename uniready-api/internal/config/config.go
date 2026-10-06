@@ -12,6 +12,9 @@ type Config struct {
 	Port        string // HTTP port the API listens on
 	DatabaseURL string // Postgres connection string (use a managed provider — Neon/Supabase/Railway — not self-hosted)
 	Environment string // "development" or "production" — controls things like verbose logging, CORS strictness
+
+	PaystackSecretKey string // server-side only — verifies webhook signatures and confirms transactions. NEVER expose to the frontend.
+	PaystackPublicKey string // safe to expose — the frontend Popup needs this to open a checkout
 }
 
 // Load reads config from environment variables, applying sane local-dev
@@ -30,6 +33,9 @@ func Load() Config {
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", ""),
 		Environment: getEnv("ENVIRONMENT", "development"),
+
+		PaystackSecretKey: getEnv("PAYSTACK_SECRET_KEY", ""),
+		PaystackPublicKey: getEnv("PAYSTACK_PUBLIC_KEY", ""),
 	}
 }
 

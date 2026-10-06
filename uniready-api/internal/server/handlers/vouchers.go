@@ -52,7 +52,7 @@ func (v *Vouchers) Redeem(c *gin.Context) {
 	// Vouchers are stored hashed, same principle as OTP codes — reusing
 	// the otp package's hash function since it's the same SHA-256
 	// hash-for-storage pattern, not otp-specific logic.
-	codeHash := otp.Hash(req.Code)
+	codeHash := otp.Hash(NormalizeVoucherCode(req.Code))
 
 	var voucherID string
 	var batchID *string
